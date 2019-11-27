@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+    <head>
+            <meta charset="utf-8" />
+    <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width" />
+    <!-- This is a wide open CSP declaration. To lock this down for production, see below. -->
+
+        <title></title>
+
+        
+    </head>
+
+    <body>
+        <canvas width="360" height="640"></canvas>
+        
+        <script>
+            let cnv = document.querySelector('canvas');
+            let ctx = cnv.getContext('2d');
+
+            //itens adicionais
+            let soundTiro = new Audio('sound/tiro.ogg');
+            soundTiro.load();
+
+            let soundTiroj = new Audio('sound/tiro.ogg');
+            soundTiroj.load();
+
+            let soundExplosao = new Audio('sound/explosion8.mp3');
+            soundExplosao.load();
+            
+
+            let fundo =  new Image();
+            fundo.src = 'sprites/fundo3.jpg';
+
+            let spriteNave = new Image();
+            spriteNave.src = 'spritesNave/Ships/spaceShips_004.png';
+
+            let spriteNaveCpu = new Image();
+            spriteNaveCpu.src = 'spritesNave/Ships/spaceShips_004c.png';
+
+            let missil = new Image;
+            missil.src = 'spritesNave/Missiles/spaceMissiles_013.png';
+
+            let missil2= new Image;
+            missil2.src = 'spritesNave/Missiles/spaceMissiles_013c.png';
+
+            let boom = new Image;
+            boom.src = 'sprites/bum0.png';
+
+            let statusDeJogo = {
+                startGame: true,
+                restartGame: false,
+                desenha: function(){
+                    if(this.startGame == true){
+                        ctx.font = '30px arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('play', cnv.width /2, cnv.height /2);
+                    }
+                },
+                atualizacao: function(){
+                    
+                }
+            }
+            
+
+            let naveJogador = {
+                imagem: {nave: spriteNave, explosao: boom},
+                posicaoX: {inix: 0, atx: null}, 
+                posicaoY: {iniy: 0, aty: null},
+                largura: 50, 
+                altura: 80,
+                status: 'parada',
+                vida: 'vivo',
+                desenho: function(){
+
+                    if(this.vida == 'vivo'){
+                        ctx.drawImage(this.imagem.nave, 0, 0, 186, 294, this.posicaoX.inix, this.posicaoY.iniy, this.largura, this.altura);
+                    }else{
+                        ctx.drawImage(this.imagem.explosao, 0, 0, 1200, 1200, this.posicaoX.inix, this.posicaoY.iniy, this.largura, this.altura);
+                    }
+                },
+                inicial: function(){
+                    this.posicaoX.atx = (cnv.width /2) - (this.largura /2);
+                    this.posicaoY.aty = (cnv.height - this.altura) - 50;
+                },
+                atualizacao: function(){  
+                    this.posicaoX.inix = this.posicaoX.atx;
+                    this.posicaoY.iniy = this.posicaoY.aty; 
+
+                    if(this.posicaoX.atx >= cnv.width - this.largura){
+                        this.posicaoX.atx = cnv.width - this.largura;
+                    }
+
+                    if(this.posicaoX.atx <= cnv.width - cnv.width){
+                        this.posicaoX.atx = cnv.width - cnv.width;
+                    }
+
+                    if(naveJogador.status == 'esquerda'){
+                        naveJogador.posicaoX.atx += -5;
+                    }
+
+                    if(naveJogador.status == 'direita'){
+                        naveJogador.posicaoX.atx += 5;
+                    }
+                } 
+
+            };
+            naveJogador.inicial();
+
+            let naveCpu = {
+                imagem: {nave: spriteNaveCpu, explosao: boom },
+                posicaoX: {inix: 0, atx: null}, 
+                posicaoY: {iniy: 0, aty: null},
+                largura: 50, 
+                altura: 80,
+                vida: 'vivo',
+                desenho: function(){
+
+                    if(this.vida == 'vivo'){
+                        ctx.drawImage(this.imagem.nave, 0, 0, 186, 294, this.posicaoX.inix, this.posicaoY.iniy, this.largura, this.altura);
+                    }else{
+                        ctx.drawImage(this.imagem.explosao, 0, 0, 1200, 1200, this.posicaoX.inix, this.posicaoY.iniy, this.largura, this.altura);
+                    }
+                },
+                inicial: function(){
+                    this.posicaoX.atx = (cnv.width /2) - (this.largura /2);
+                    this.posicaoY.aty = 0;
+                },
+                atualizacao: function(){  
+                    this.posicaoX.inix = this.posicaoX.atx;
+                    this.posicaoY.iniy = this.posicaoY.aty; 
+                    
+                    //se o missil vim e sua direção desvia para direita
+                    if(missilJogador.y <= cnv.height /2 && (cnv.width /2) - (this.largura /2) >= missilJogador.x + missilJogador.largura){
+                        this.posicaoX.atx += 1;
+                    }
+                    
+                    //se o missil vim e sua direção desvia para esquerda
+                    if(missilJogador.y <= cnv.height /2 && (cnv.width /2) - (this.largura /2) <= missilJogador.x){
+                        this.posicaoX.atx += -1;
+                    }
+                    
+                    //se o jogador estiver em sua esquerda, vá para esquerda.
+                    if(missilCpu.status == 'normal' && missilJogador.status == 'normal' && this.posicaoX.atx >= naveJogador.posicaoX.atx && this.vida == 'vivo' && naveJogador.vida == 'vivo'){
+                        this.posicaoX.atx += -5;
+                    }
+
+                    //se o jogador estiver em sua esquerda, vá para diretita.
+                    if(missilCpu.status == 'normal' && missilJogador.status == 'normal' && this.posicaoX.atx <= naveJogador.posicaoX.atx && this.vida == 'vivo' && naveJogador.vida == 'vivo'){
+                        this.posicaoX.atx += 5;
+                    }
+                    
+                    //impedi que a nave saia da tela na margem direita.
+                    if(this.posicaoX.atx >= cnv.width - this.largura){
+                        this.posicaoX.atx = cnv.width - this.largura;
+                    }
+                    
+                    //impedi que a nave saia da tela na margem esquerda.
+                    if(this.posicaoX.atx <= cnv.width - cnv.width){
+                        this.posicaoX.atx = cnv.width - cnv.width;
+                    }
+                } 
+
+            };
+            naveCpu.inicial();
+
+            let missilJogador = {
+                imagem: missil,
+                x: null,
+                y: null,
+                largura: 12,
+                altura: 24,
+                status: 'normal',
+                visibilidade: true,
+                desenho: function(){
+
+                    if(this.visibilidade == true){
+                    ctx.drawImage(this.imagem, 0, 0, 32, 44, this.x, this.y, this.largura, this.altura);
+                    }
+                },
+                atualizacao: function(){
+
+                    if(this.status == 'normal'){
+                    this.x = (naveJogador.posicaoX.atx + naveJogador.largura /2) - this.largura /2 ;
+                    this.y = naveJogador.posicaoY.aty - this.altura;
+                    }
+
+                    if(this.status == 'atirar' && naveCpu.vida == 'vivo' && naveJogador.vida == 'vivo'){
+                        soundTiroj.play();
+                        this.x = this.x;
+                        this.y += -5;
+                    }
+
+                    if(this.y <= cnv.height / 2){
+                        soundTiroj.load();
+                    }
+                    
+                    //missil colide com Cpu
+                    if(this.y <= naveCpu.posicaoY.aty + naveCpu.altura && this.x >= naveCpu.posicaoX.atx && (this.x + this.largura) <= naveCpu.posicaoX.atx + naveCpu.largura){
+                        this.status = 'normal';
+                        naveCpu.vida = 'morto';
+                        missilCpu.visibilidade = false;
+                        soundExplosao.play();
+                    }
+
+                    if(this.y <= 0){
+                        this.status = 'normal';
+                    }
+                }
+            }
+
+            let missilCpu = {
+                imagem: missil2,
+                x: null,
+                y: null,
+                largura: 12,
+                altura: 24,
+                status: 'normal',
+                visibilidade: true,
+                desenho: function(){
+
+                    if(this.visibilidade == true){
+                     ctx.drawImage(this.imagem, 0, 0, 32, 44, this.x, this.y, this.largura, this.altura);
+                    }
+                },
+                atualizacao: function(){
+                    
+                    //posição inicial do missilCpu
+                    if(missilCpu.status == 'normal'){
+                    this.x = (naveCpu.posicaoX.atx + naveCpu.largura /2) - this.largura /2 ;
+                    this.y = naveCpu.posicaoY.aty + naveCpu.altura;
+                    }
+                    
+                    //se o jadodor adversário estiver na mira o staus da CPU muda para 'ATIRAR'
+                    if(missilCpu.x >= naveJogador.posicaoX.atx && (missilCpu.x + missilCpu.largura) <= naveJogador.posicaoX.atx + naveJogador.largura && naveJogador.vida == 'vivo'){
+                        missilCpu.status = 'atirar';
+                        
+                        
+                    }
+                    
+                    //cpu atira
+                    if(missilCpu.status == 'atirar' && naveCpu.vida == 'vivo' && naveJogador.vida == 'vivo'){
+                        soundTiro.play();
+                        this.x = this.x;
+                        this.y += 5;
+                    } 
+
+                    if(missilCpu.y >= cnv.height / 2){
+                        soundTiro.load();
+                    }
+                     
+                    //missio colide com jogador
+                    if((missilCpu.y + missilCpu.altura) >= naveJogador.posicaoY.aty && missilCpu.x >= naveJogador.posicaoX.atx && (missilCpu.x + missilCpu.largura) <= naveJogador.posicaoX.atx + naveJogador.largura ){
+                        missilCpu.status = 'normal';
+                        naveJogador.vida = 'morto';
+                        missilJogador.visibilidade = false;
+                        soundExplosao.play();
+                    }
+                    
+                    //missio atinge o limete da tela 
+                    if(missilCpu.y + missilCpu.altura >= cnv.height - controle.atirar.altura){
+                        missilCpu.status = 'normal';
+                        
+                    }
+                }
+            }
+
+            let controle = {
+                esquerda: {largura: 50, altura: 50, x: 0, y: 0}, 
+                direita:  {largura: 50, altura: 50, x: 60, y: 0}, 
+                atirar:   {largura: 50, altura: 50, x: 120, y: 0},
+                desenho: function(){
+                    ctx.fillStyle = 'rgb(100, 100, 100)';
+                    ctx.fillRect(this.esquerda.x, this.esquerda.y, this.esquerda.largura, this.esquerda.largura);
+
+                    ctx.fillStyle = 'rgb(100, 100, 100)';
+                    ctx.fillRect(this.direita.x, this.direita.y, this.direita.largura, this.direita.largura);
+
+                    ctx.fillStyle = 'rgb(100, 100, 100)';
+                    ctx.fillRect(this.atirar.x, this.atirar.y, this.atirar.largura, this.atirar.largura);
+                },
+                atualizacao: function(){
+                    this.esquerda.y = cnv.height - this.esquerda.altura;
+                    this.direita.y = cnv.height - this.direita.altura;
+                    
+                    this.atirar.y = cnv.height - this.atirar.altura;
+                    this.atirar.x = cnv.width - this.atirar.largura;
+                }
+            };
+
+            //controle
+            
+            cnv.addEventListener('mousedown', function(evt){
+                var rectNav = cnv.getBoundingClientRect();
+                var pos = {
+                    x: evt.clientX - rectNav.left,
+                    y: evt.clientY - rectNav.top
+                };
+                
+                
+                if(pos.x > controle.esquerda.x && pos.x < (controle.esquerda.x + controle.esquerda.largura) && pos.y > controle.esquerda.y && pos.y < (controle.esquerda.y + controle.esquerda.altura) && naveJogador.vida == 'vivo'){
+                    naveJogador.status = 'esquerda';
+                }
+
+                if(pos.x > controle.direita.x && pos.x < (controle.direita.x + controle.direita.largura) && pos.y > controle.direita.y && pos.y < (controle.direita.y + controle.direita.altura) && naveJogador.vida == 'vivo'){
+                    naveJogador.status = 'direita';
+                }
+
+                if(pos.x > controle.atirar.x && pos.x < (controle.atirar.x + controle.atirar.largura) && pos.y > controle.atirar.y && pos.y < (controle.atirar.y + controle.atirar.altura) && naveJogador.vida == 'vivo'){
+                    missilJogador.status = 'atirar';
+                }
+            });
+
+            cnv.addEventListener('mouseup', function(evt){
+                naveJogador.status = 'parado';
+            });
+
+            function loop(){
+                window.requestAnimationFrame(loop, cnv);
+                update();
+                render();
+            }
+
+            function update(){
+                naveJogador.atualizacao();
+                naveCpu.atualizacao();
+                controle.atualizacao();
+                missilJogador.atualizacao();
+                missilCpu.atualizacao();
+            }
+
+            function render(){
+                ctx.clearRect(0, 0, cnv.width, cnv.height);
+                ctx.drawImage(fundo, -700, 0, 1280, 720 );
+                naveJogador.desenho();
+                controle.desenho();
+                missilJogador.desenho();
+                naveCpu.desenho();
+                missilCpu.desenho();
+            }
+
+            loop();
+        
+        </script>
+    </body>
+</html>
